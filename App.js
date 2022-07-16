@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Fontisto } from "@expo/vector-icons";
+import { FontAwesome5 } from "@expo/vector-icons";
 import { theme } from "./colors";
 
 const STORAGE_KEY = "@toDos";
@@ -35,7 +36,7 @@ export default function App() {
   };
   const loadToDos = async () => {
     const s = await AsyncStorage.getItem(STORAGE_KEY);
-    s !== null ? setToDos(J.parse(s)) : console.log("list is empty"); //dbug
+    s !== null ? setToDos(JSON.parse(s)) : console.log("list is empty"); //dbug
   };
   useEffect(() => {
     loadToDos();
@@ -46,10 +47,7 @@ export default function App() {
   };
   const loadWorking = async () => {
     const w = await AsyncStorage.getItem(WORKING_STORAGE_KEY);
-    console.log(w);
-    console.log(typeof w);
     const b = w === "true";
-    console.log(b);
     b !== null ? setWorking(b) : setWorking(true); //dbug
   };
   useEffect(() => {
@@ -60,7 +58,7 @@ export default function App() {
     if (text == "") {
       return;
     } //텍스트박스가 비어있다면 아무것도 안함
-    const newToDos = { ...toDos, [Date.now()]: { text, working } };
+    const newToDos = { ...toDos, [Date.now()]: { text, working, done } };
     setToDos(newToDos);
     await saveToDos(newToDos);
     setText("");
@@ -78,6 +76,18 @@ export default function App() {
         },
       },
     ]);
+  };
+  const doneToDo = async (key) => {
+    const newToDos = { ...toDos };
+    console.log(newToDos[key].done);
+    if (newToDos[key].done === false) {
+      newToDos[key].done = true;
+    } else {
+      newToDos[key].done = false;
+    }
+    console.log(newToDos);
+    setToDos(newToDos);
+    await saveToDos(newToDos);
   };
   return (
     <View style={styles.container}>
@@ -111,14 +121,27 @@ export default function App() {
       <ScrollView>
         {Object.keys(toDos).map((key) =>
           toDos[key].working === working ? (
-            <View style={styles.toDo} key={key}>
+            <View
+              style={{
+                ...styles.toDo,
+                opacity: !toDos[key].done ? 1 : 0.5,
+              }}
+              key={key}
+            >
               <Text style={styles.toDoText}>{toDos[key].text}</Text>
-              <TouchableOpacity onPress={() => deleteToDo(key)}>
+              <TouchableOpacity style={styles.icongroup}>
+                <FontAwesome5 style={styles.icon} name="tools" size={24} />
                 <Fontisto
-                  style={styles.trash}
+                  onPress={() => doneToDo(key)}
+                  style={styles.icon}
+                  name="check"
+                  size={24}
+                />
+                <Fontisto
+                  onPress={() => deleteToDo(key)}
+                  style={styles.icon}
                   name="trash"
                   size={24}
-                  color="black"
                 />
               </TouchableOpacity>
             </View>
@@ -166,5 +189,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "white",
   },
-  trash: { color: "white", opacity: 0.8 },
+  icongroup: {
+    flexDirection: "row",
+  },
+  icon: { color: "white", opacity: 0.8, marginLeft: 15 },
 });
